@@ -1,5 +1,4 @@
 const express = require('express')
-const fs = require('fs')
 let app = express()
 const Product = require('./models/product')
 const connectDb = require('./congif/database')
@@ -59,9 +58,11 @@ app.post('/api/v1/products', async (req, res) => {
             }
         })
     } catch (error) {
+        const errorMsg = Object.values(error?.errors).map(el => el?.message);
         res.status(400).json({
             status: 'failed',
-            message: err.message
+            message: error.message,
+            errorMsg
         })
     }
 })
@@ -70,7 +71,7 @@ app.post('/api/v1/products', async (req, res) => {
 app.put('/api/v1/products/:updateId', async (req, res) => {
     try {
         const id = req.params.updateId
-        const updateProduct = await Product.updateOne({ pid: id }, req.body)
+        const updateProduct = await Product.updateOne({ pid: id }, req.body, { new: true, runValidators: true })
         if (updateProduct.modifiedCount !== 0) {
             res.status(200).json({
                 status: 'updated successfully',
