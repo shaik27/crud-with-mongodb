@@ -13,12 +13,46 @@ app.use(logger)
 
 //custom middleware
 
+//products stats
+app.get('/api/v1/products-stats', async (req, res) => {
+    try {
+        const stats = await Product.aggregate([
+            { $match: { price: { $gte: 100 } } },
+            { $group: { _id: '$name', avgSum: { $sum: '$price' } } },
+            // { $group: { _id: null, avgSum: { $sum: '$price' } } }
+            { $sort: { avgSum: 1 } }
+
+        ])
+        res.status(200).send({
+            status: 'success',
+            count: stats.length,
+            data: stats
+        })
+    } catch (error) {
+        res.status(400).send('something went wrong')
+    }
+})
 
 //get
 app.get('/api/v1/products', async (req, res) => {
     try {
-        const product = await Product.find()
-        res.send(product)
+        const queryParams = req.query
+        console.log('query ', queryParams);
+        if (Object.keys(queryParams).length) {
+            // const product = await Product.find().where('price').gte(queryParams?.price)
+            //     .where('name').equals(queryParams?.name)
+            const product = await Product.find(queryParams)
+            if (product?.length) {
+                res.send(product)
+            }
+            else {
+                res.status(400).send('Data not found')
+            }
+        }
+        else {
+            const product = await Product.find()
+            res.send(product)
+        }
     } catch (error) {
         res.status(400).send('something went wrong')
     }
